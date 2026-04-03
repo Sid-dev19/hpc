@@ -1,0 +1,8 @@
+// routes/auth.js
+const router = require('express').Router();
+const { login, getMe, changePassword } = require('../controllers/auth');
+const { protect } = require('../middleware/auth');
+router.post('/login', login);
+router.get('/me', protect, getMe);
+router.put('/change-password', protect, changePassword);
+module.exports = router;
