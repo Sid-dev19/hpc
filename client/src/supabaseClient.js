@@ -84,9 +84,9 @@ export const db = {
     if (options.limit) query = query.limit(options.limit);
     if (options.single) query = query.single();
     
-    const { data, error } = await query;
+    const { data: result, error } = await query;
     if (error) throw error;
-    return data;
+    return result;
   },
 
   // Insert function
