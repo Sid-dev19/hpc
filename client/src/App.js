@@ -1,132 +1,119 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { Toaster } from 'react-hot-toast';
+// App.js - Main React App with Supabase integration
+import React, { useEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from './components/common/AuthContext'
+import ProtectedRoute from './components/common/ProtectedRoute'
 
-// Layout
-import AppShell from './components/common/AppShell';
-import LoginPage from './pages/LoginPage';
+// Import pages
+import LoginPage from './pages/auth/LoginPage'
+import SignupPage from './pages/auth/SignupPage'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import TeacherDashboard from './pages/teacher/TeacherDashboard'
+import StudentDashboard from './pages/student/StudentDashboard'
+import ParentDashboard from './pages/parent/ParentDashboard'
+import PeerDashboard from './pages/peer/PeerDashboard'
 
-// Admin pages
-import AdminDashboard    from './pages/admin/AdminDashboard';
-import AdminUsers        from './pages/admin/AdminUsers';
-import AdminCompetencies from './pages/admin/AdminCompetencies';
-import AdminActivities   from './pages/admin/AdminActivities';
-import AdminChapterMap   from './pages/admin/AdminChapterMap';
-import AdminExams        from './pages/admin/AdminExams';
-import AdminAnalytics    from './pages/admin/AdminAnalytics';
+// Import styles
+import './index.css'
 
-// Teacher pages
-import TeacherDashboard  from './pages/teacher/TeacherDashboard';
-import TeacherRubricFill from './pages/teacher/TeacherRubricFill';
-import TeacherFeedback   from './pages/teacher/TeacherFeedback';
-import TeacherTermSummary from './pages/teacher/TeacherTermSummary';
-import TeacherActivities from './pages/teacher/TeacherActivities';
-import TeacherExamGen    from './pages/teacher/TeacherExamGen';
+function App() {
+  const { user, loading } = useAuth()
 
-// Student pages
-import StudentDashboard    from './pages/student/StudentDashboard';
-import StudentPartA        from './pages/student/StudentPartA';
-import StudentSelfReflect  from './pages/student/StudentSelfReflect';
-import StudentProgressWheel from './pages/student/StudentProgressWheel';
-import StudentHPCReport    from './pages/student/StudentHPCReport';
+  useEffect(() => {
+    // Check for existing session on app load
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          console.log('User already logged in:', session.user)
+        }
+      } catch (err) {
+        console.error('Session check error:', err)
+      }
+    }
 
-// Peer pages
-import PeerDashboard from './pages/peer/PeerDashboard';
-import PeerAssessment from './pages/peer/PeerAssessment';
+    checkSession()
+  }, [])
 
-// Parent pages
-import ParentDashboard    from './pages/parent/ParentDashboard';
-import ParentProgressView from './pages/parent/ParentProgressView';
-import ParentReflection   from './pages/parent/ParentReflection';
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    )
+  }
 
-// Role → default route map
-const DEFAULT_ROUTES = {
-  admin:   '/admin/dashboard',
-  teacher: '/teacher/dashboard',
-  student: '/student/dashboard',
-  peer:    '/peer/dashboard',
-  parent:  '/parent/dashboard'
-};
-
-const ProtectedRoute = ({ children, roles }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="loading-center"><div className="spinner" /></div>;
-  if (!user) return <Navigate to="/login" replace />;
-  if (roles && !roles.includes(user.role)) return <Navigate to={DEFAULT_ROUTES[user.role]} replace />;
-  return children;
-};
-
-const RoleRedirect = () => {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return <Navigate to={DEFAULT_ROUTES[user.role]} replace />;
-};
-
-export default function App() {
   return (
     <AuthProvider>
-      <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<RoleRedirect />} />
+      <Router>
+        <div className="min-h-screen bg-gray-50">
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            
+            {/* Protected routes */}
+            <Route 
+              path="/admin/dashboard" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/teacher/dashboard" 
+              element={
+                <ProtectedRoute requiredRole="teacher">
+                  <TeacherDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/student/dashboard" 
+              element={
+                <ProtectedRoute requiredRole="student">
+                  <StudentDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/parent/dashboard" 
+              element={
+                <ProtectedRoute requiredRole="parent">
+                  <ParentDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/peer/dashboard" 
+              element={
+                <ProtectedRoute requiredRole="peer">
+                  <PeerDashboard />
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* ── Admin ── */}
-          <Route path="/admin" element={
-            <ProtectedRoute roles={['admin']}><AppShell /></ProtectedRoute>
-          }>
-            <Route path="dashboard"    element={<AdminDashboard />} />
-            <Route path="users"        element={<AdminUsers />} />
-            <Route path="competencies" element={<AdminCompetencies />} />
-            <Route path="activities"   element={<AdminActivities />} />
-            <Route path="chapters"     element={<AdminChapterMap />} />
-            <Route path="exams"        element={<AdminExams />} />
-            <Route path="analytics"    element={<AdminAnalytics />} />
-          </Route>
-
-          {/* ── Teacher ── */}
-          <Route path="/teacher" element={
-            <ProtectedRoute roles={['teacher']}><AppShell /></ProtectedRoute>
-          }>
-            <Route path="dashboard"    element={<TeacherDashboard />} />
-            <Route path="rubric/:studentId/:activityId" element={<TeacherRubricFill />} />
-            <Route path="feedback/:studentId/:activityId" element={<TeacherFeedback />} />
-            <Route path="term-summary" element={<TeacherTermSummary />} />
-            <Route path="activities"   element={<TeacherActivities />} />
-            <Route path="exams"        element={<TeacherExamGen />} />
-          </Route>
-
-          {/* ── Student ── */}
-          <Route path="/student" element={
-            <ProtectedRoute roles={['student']}><AppShell /></ProtectedRoute>
-          }>
-            <Route path="dashboard"         element={<StudentDashboard />} />
-            <Route path="about-me"          element={<StudentPartA />} />
-            <Route path="reflection/:activityId" element={<StudentSelfReflect />} />
-            <Route path="wheel/:activityId" element={<StudentProgressWheel />} />
-            <Route path="hpc-report"        element={<StudentHPCReport />} />
-          </Route>
-
-          {/* ── Peer ── */}
-          <Route path="/peer" element={
-            <ProtectedRoute roles={['student','peer']}><AppShell /></ProtectedRoute>
-          }>
-            <Route path="dashboard"             element={<PeerDashboard />} />
-            <Route path="assess/:activityId"    element={<PeerAssessment />} />
-          </Route>
-
-          {/* ── Parent ── */}
-          <Route path="/parent" element={
-            <ProtectedRoute roles={['parent']}><AppShell /></ProtectedRoute>
-          }>
-            <Route path="dashboard"  element={<ParentDashboard />} />
-            <Route path="progress"   element={<ParentProgressView />} />
-            <Route path="reflection" element={<ParentReflection />} />
-          </Route>
-
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+            {/* Redirect root to appropriate dashboard */}
+            <Route 
+              path="/" 
+              element={
+                user ? (
+                  <Navigate to={`/${user.role}/dashboard`} replace />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              } 
+            />
+          </Routes>
+        </div>
+      </Router>
     </AuthProvider>
-  );
+  )
 }
+
+export default App
