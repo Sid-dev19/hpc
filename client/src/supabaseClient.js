@@ -91,9 +91,9 @@ export const db = {
 
   // Insert function
   insert: async (table, data) => {
-    const { data, error } = await supabase.from(table).insert(data);
+    const { data: insertedData, error } = await supabase.from(table).insert(data);
     if (error) throw error;
-    return data;
+    return insertedData;
   },
 
   // Update function
